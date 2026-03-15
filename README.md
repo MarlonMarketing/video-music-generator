@@ -1,42 +1,51 @@
 # MusicVideoForge PRO
 
-Cloud-Only Broadcast Quality Music Video Generation
+Generazione di Video Musicali di Qualità Broadcast su Architettura LAMP.
 
-## Architecture
-WebApp (React) → n8n Webhooks → KIE.ai (Suno+Kling) → OpenRouter → FFmpeg CPU post-processing
+## Architettura
 
-## Quick Deploy (5 min)
+- **Frontend**: App React statica servita da Apache.
+- **Backend**: API PHP (eseguite via Apache/mod_php).
+- **Database**: MySQL (gestito da Virtualmin).
+- **Automazione**: n8n (Docker) per i workflow AI (YouTube Research, Lyrics, Musica, Video, FFmpeg).
 
-1. **Clone repo**
-   ```bash
-   git clone <repo-url>
-   cd video-music-generator
-   ```
+## Installazione
 
-2. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
+Per istruzioni dettagliate sull'installazione su server Linux (Oracle Cloud ARM) con stack LAMP e Virtualmin, consulta il file [install.md](install.md).
 
-3. **Start services**
-   ```bash
-   docker-compose up --build
-   ```
+## Quick Start (Setup LAMP)
 
-4. **Access services**
-   - Frontend: http://localhost:3000
-   - Backend: http://localhost:8000
-   - n8n: http://localhost:5678 (admin / your N8N_PASSWORD)
+1.  **Configura Database MySQL** in Virtualmin.
+2.  **Crea Virtual Host** per il dominio in Apache.
+3.  **Deploy Frontend**: Carica i file statici React in `/home/videomusic/public_html/`.
+4.  **Deploy Backend**: Carica i file PHP in `/home/videomusic/public_html/api/`.
+5.  **Installa n8n** via Docker e configura il reverse proxy Apache.
+6.  **Importa Workflow** n8n usando lo script `import_n8n_workflows.js`.
+7.  **Configura Variabili d'Ambiente** in n8n e nel backend PHP.
 
-## Features
-- 🔍 Research: YouTube opportunity analysis
-- ✍️ Lyrics: AI-generated lyrics with instrumental toggle
-- 🎵 Music: Suno chirp-v4 preview player
-- 🎬 Video: Kling cinematic timeline
-- 📊 Projects: A/B variants & ZIP download
+## Funzionalità
 
-## API Keys Required
-- OpenRouter (free models)
-- KIE.ai (Suno + Kling)
-- YouTube Data API
+-   🔍 **Research**: Analisi opportunità YouTube.
+-   ✍️ **Lyrics**: Testi canzoni generati da AI (OpenRouter).
+-   🎵 **Music**: Generazione musica Suno via KIE.ai.
+-   🎬 **Video**: Generazione video cinematici Kling via KIE.ai.
+-   📊 **Projects**: Gestione progetti e download ZIP.
+
+## API Keys Richieste
+
+-   **OpenRouter** (per lyrics e modelli AI).
+-   **KIE.ai** (per musica Suno e video Kling).
+-   **YouTube Data API** (per ricerca canali).
+
+## Repository Structure
+
+-   `frontend/`: Sorgente React.
+-   `backend_php/`: Sorgente PHP.
+-   `n8n_workflows/`: Definizione workflow n8n.
+-   `import_n8n_workflows.js`: Script per importare workflow in n8n.
+-   `install.md`: Istruzioni installazione LAMP.
+-   `n8n_setup.md`: Istruzioni configurazione n8n.
+
+## License
+
+MIT

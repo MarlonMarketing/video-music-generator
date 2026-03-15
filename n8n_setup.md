@@ -60,14 +60,14 @@ Per ogni workflow importato:
 
 ### Test YouTube Research:
 ```bash
-curl -X POST https://n8n.plamanco.com/webhook/youtube-research-webhook \
+curl -X POST https://n8n.plamanco.com/webhook/research \
   -H "Content-Type: application/json" \
   -d '{"query":"musica jazz","limit":5}'
 ```
 
 ### Test Generazione Lyrics:
 ```bash
-curl -X POST https://n8n.plamanco.com/webhook/lyrics-webhook \
+curl -X POST https://n8n.plamanco.com/webhook/lyrics \
   -H "Content-Type: application/json" \
   -d '{"prompt":"roma sotto la luna","language":"IT"}'
 ```
@@ -98,3 +98,7 @@ I workflow n8n inviano i risultati a questo endpoint.
 ### Timeout:
 - Aumenta il timeout nei nodi HTTP Request
 - Verifica la connessione al backend PHP
+
+### Errore FFmpeg "command not found":
+- Assicurati che FFmpeg sia installato sul server: `sudo apt install ffmpeg`
+- Il workflow `5_ffmpeg_pro` utilizza un nodo Code che richiede l'eseguibile ffmpeg nel PATH
