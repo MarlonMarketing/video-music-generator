@@ -153,8 +153,8 @@ if ($action === 'research' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $query = $input['query'] ?? '';
     $limit = $input['limit'] ?? 5;
     
-    // Chiamata sincrona al webhook di n8n (produzione)
-    $ch = curl_init('https://n8n.plamanco.com/webhook/research');
+    // Chiamata sincrona al webhook di n8n (test endpoint per attendere risultato)
+    $ch = curl_init('https://n8n.plamanco.com/webhook-test/research');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query, 'limit' => $limit]));
