@@ -151,17 +151,36 @@ if ($action === 'create_project' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($action === 'research' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     $query = $input['query'] ?? '';
-    $limit = $input['limit'] ?? 10;
+    $limit = $input['limit'] ?? 5;
     
-    // Mock data (da integrare con n8n)
-    json_response([
-        'status' => 'queued',
-        'query' => $query,
-        'results' => [
-            ['channel' => 'Demo Channel 1', 'opportunity_score' => 85],
-            ['channel' => 'Demo Channel 2', 'opportunity_score' => 72]
-        ]
-    ]);
+    // Chiamata sincrona al webhook di n8n (produzione)
+    $ch = curl_init('https://n8n.plamanco.com/webhook/research');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['query' => $query, 'limit' => $limit]));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // Per SSL self-signed o test
+    
+    $response = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    if ($error) {
+        json_response(['status' => 'error', 'message' => 'n8n connection error', 'error' => $error], 500);
+    }
+    
+    if ($http_code === 200) {
+        $result = json_decode($response, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            json_response($result);
+        } else {
+            json_response(['status' => 'error', 'message' => 'Invalid JSON from n8n', 'raw' => $response], 500);
+        }
+    } else {
+        json_response(['status' => 'error', 'message' => 'n8n returned error', 'code' => $http_code, 'response' => $response], $http_code);
+    }
 }
 
 // Endpoint: /api.php?action=generate_lyrics (POST)
