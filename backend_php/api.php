@@ -234,45 +234,133 @@ if ($action === 'webhook_n8n' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     json_response(['status' => 'received']);
 }
 
+// Endpoint: /api.php?action=register (POST)
+if ($action === 'register' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $username = $input['username'] ?? '';
+    $email = $input['email'] ?? '';
+    $password = $input['password'] ?? '';
+
+    if (empty($username) || empty($email) || empty($password)) {
+        json_response(['status' => 'error', 'message' => 'Missing fields'], 400);
+    }
+
+    if (!$pdo) {
+        json_response(['status' => 'error', 'message' => 'Database not connected'], 500);
+    }
+
+    // Verifica se l'utente esiste già
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? OR username = ?");
+    $stmt->execute([$email, $username]);
+    if ($stmt->fetch()) {
+        json_response(['status' => 'error', 'message' => 'User already exists'], 409);
+    }
+
+    // Hash della password
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+    // Inserisci utente
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
+    $stmt->execute([$username, $email, $password_hash]);
+    
+    $user_id = $pdo->lastInsertId();
+    
+    // Genera token JWT semplice (senza libreria esterna)
+    $payload = json_encode([
+        'user_id' => $user_id,
+        'exp' => time() + (60 * 60 * 24) // 24 ore
+    ]);
+    $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $signature = base64_encode(hash_hmac('sha256', "$header.$payload", 'SECRET_KEY_VIDEO_MUSIC', true));
+    $token = "$header.$payload.$signature";
+    
+    json_response([
+        'status' => 'success',
+        'message' => 'User registered',
+        'token' => $token,
+        'user' => ['id' => $user_id, 'username' => $username, 'email' => $email]
+    ]);
+}
+
+// Endpoint: /api.php?action=login (POST)
+if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $email = $input['email'] ?? '';
+    $password = $input['password'] ?? '';
+
+    if (empty($email) || empty($password)) {
+        json_response(['status' => 'error', 'message' => 'Missing fields'], 400);
+    }
+
+    if (!$pdo) {
+        json_response(['status' => 'error', 'message' => 'Database not connected'], 500);
+    }
+
+    // Trova utente
+    $stmt = $pdo->prepare("SELECT id, username, email, password_hash FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user || !password_verify($password, $user['password_hash'])) {
+        json_response(['status' => 'error', 'message' => 'Invalid credentials'], 401);
+    }
+
+    // Genera token JWT
+    $payload = json_encode([
+        'user_id' => $user['id'],
+        'exp' => time() + (60 * 60 * 24) // 24 ore
+    ]);
+    $header = base64_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $signature = base64_encode(hash_hmac('sha256', "$header.$payload", 'SECRET_KEY_VIDEO_MUSIC', true));
+    $token = "$header.$payload.$signature";
+
+    json_response([
+        'status' => 'success',
+        'message' => 'Login successful',
+        'token' => $token,
+        'user' => ['id' => $user['id'], 'username' => $user['username'], 'email' => $user['email']]
+    ]);
+}
+
 // Endpoint: /api.php?action=save_api_keys (POST)
 // Salva le API keys e aggiorna automaticamente n8n
 if ($action === 'save_api_keys' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    // Verifica autenticazione (qui dovresti verificare il token JWT)
-    // Per ora, accettiamo qualsiasi richiesta (solo per testing)
-    
-    $api_keys = [
-        'OPENROUTER_API_KEY' => $input['openrouter_key'] ?? '',
-        'KIEAI_API_KEY' => $input['kieai_key'] ?? '',
-        'YOUTUBE_API_KEY' => $input['youtube_key'] ?? ''
-    ];
-    
-    // Rimuovi le chiavi vuote
-    $api_keys = array_filter($api_keys);
-    
-    // Aggiorna le variabili di n8n (salvando su file)
-    $update_result = updateN8nEnvironmentVariables($api_keys);
-    
-    if ($update_result) {
-        // Aggiorna anche il file config.php locale (opzionale)
-        $config_content = file_get_contents(__DIR__ . '/config.php');
-        foreach ($api_keys as $key => $value) {
-            // Sostituisci la definizione esistente
-            $pattern = "/define\('$key',.*\);/";
-            $replacement = "define('$key', '$value');";
-            $config_content = preg_replace($pattern, $replacement, $config_content);
-        }
-        file_put_contents(__DIR__ . '/config.php', $config_content);
-        
-        json_response([
-            'status' => 'success',
-            'message' => 'API keys saved and n8n configuration updated',
-            'api_keys' => $api_keys
-        ]);
-    } else {
-        json_response(['status' => 'error', 'message' => 'Failed to update n8n configuration'], 500);
-    }
+  $input = json_decode(file_get_contents('php://input'), true);
+  
+  // Verifica autenticazione (qui dovresti verificare il token JWT)
+  // Per ora, accettiamo qualsiasi richiesta (solo per testing)
+  
+  $api_keys = [
+      'OPENROUTER_API_KEY' => $input['openrouter_key'] ?? '',
+      'KIEAI_API_KEY' => $input['kieai_key'] ?? '',
+      'YOUTUBE_API_KEY' => $input['youtube_key'] ?? ''
+  ];
+  
+  // Rimuovi le chiavi vuote
+  $api_keys = array_filter($api_keys);
+  
+  // Aggiorna le variabili di n8n (salvando su file)
+  $update_result = updateN8nEnvironmentVariables($api_keys);
+  
+  if ($update_result) {
+      // Aggiorna anche il file config.php locale (opzionale)
+      $config_content = file_get_contents(__DIR__ . '/config.php');
+      foreach ($api_keys as $key => $value) {
+          // Sostituisci la definizione esistente
+          $pattern = "/define\('$key',.*\);/";
+          $replacement = "define('$key', '$value');";
+          $config_content = preg_replace($pattern, $replacement, $config_content);
+      }
+      file_put_contents(__DIR__ . '/config.php', $config_content);
+      
+      json_response([
+          'status' => 'success',
+          'message' => 'API keys saved and n8n configuration updated',
+          'api_keys' => $api_keys
+      ]);
+  } else {
+      json_response(['status' => 'error', 'message' => 'Failed to update n8n configuration'], 500);
+  }
 }
 
 // Endpoint: /api.php?action=get_api_keys (GET)
