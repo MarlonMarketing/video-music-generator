@@ -2,20 +2,44 @@
   "name": "4_kling_cinematic",
   "nodes": [
     {
-      "parameters": {},
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "video"
+      },
       "id": "webhook-trigger",
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://videomusic.plamanco.com/api/api.php?action=get_api_keys",
+        "method": "GET",
+        "responseFormat": "json"
+      },
+      "id": "get-api-keys",
+      "name": "Get API Keys",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [350, 300]
+    },
+    {
+      "parameters": {
+        "options": {
+          "mode": "combine"
+        }
+      },
+      "id": "merge-keys",
+      "name": "Merge API Keys",
+      "type": "n8n-nodes-base.merge",
       "typeVersion": 1,
-      "position": [250, 300],
-      "webhook": "POST /video"
+      "position": [450, 300]
     },
     {
       "parameters": {
         "url": "https://api.kie.ai/v1/kling/generate",
         "method": "POST",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
         "bodyParameters": {
           "parameters": [
             {
@@ -36,7 +60,7 @@
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.KIEAI_API_KEY }}"
+              "value": "Bearer {{ $json.api_keys.KIEAI_API_KEY }}"
             }
           ]
         }
@@ -45,7 +69,7 @@
       "name": "Kling API Call",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [450, 300]
+      "position": [550, 300]
     },
     {
       "parameters": {
@@ -68,27 +92,36 @@
     "Webhook Trigger": {
       "main": [
         [
-          {
-            "node": "Kling API Call",
-            "type": "main",
-            "index": 0
-          }
+          { "node": "Get API Keys", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Merge API Keys", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get API Keys": {
+      "main": [
+        [
+          { "node": "Merge API Keys", "type": "main", "index": 1 }
+        ]
+      ]
+    },
+    "Merge API Keys": {
+      "main": [
+        [
+          { "node": "Kling API Call", "type": "main", "index": 0 }
         ]
       ]
     },
     "Kling API Call": {
       "main": [
         [
-          {
-            "node": "Webhook Response",
-            "type": "main",
-            "index": 0
-          }
+          { "node": "Webhook Response", "type": "main", "index": 0 }
         ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {},
   "versionId": "1"
 }

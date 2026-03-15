@@ -7,9 +7,12 @@ const N8N_URL = 'https://n8n.plamanco.com';
 
 async function importWorkflow(workflowData) {
   try {
+    // Rimuovi proprietà non necessarie per l'API di creazione
+    const { versionId, active, ...cleanWorkflowData } = workflowData;
+    
     const response = await axios.post(
       `${N8N_URL}/api/v1/workflows`,
-      workflowData,
+      cleanWorkflowData,
       {
         headers: {
           'X-N8N-API-KEY': API_KEY,
@@ -18,6 +21,21 @@ async function importWorkflow(workflowData) {
       }
     );
     console.log(`✅ Workflow "${workflowData.name}" importato con successo! ID: ${response.data.id}`);
+    
+    // Se il workflow era attivo, attivalo dopo la creazione
+    if (workflowData.active) {
+      await axios.post(
+        `${N8N_URL}/api/v1/workflows/${response.data.id}/activate`,
+        {},
+        {
+          headers: {
+            'X-N8N-API-KEY': API_KEY
+          }
+        }
+      );
+      console.log(`   ➤ Workflow attivato.`);
+    }
+    
     return response.data;
   } catch (error) {
     console.error(`❌ Errore importando workflow "${workflowData.name}":`);
@@ -38,7 +56,10 @@ async function main() {
 
   console.log('🚀 Inizio importazione workflow in n8n...\n');
 
-  for (const workflow of workflowsData) {
+  // Gestisce sia array che singolo oggetto
+  const workflowsArray = Array.isArray(workflowsData) ? workflowsData : [workflowsData];
+
+  for (const workflow of workflowsArray) {
     await importWorkflow(workflow);
     // Pausa di 1 secondo tra le richieste
     await new Promise(resolve => setTimeout(resolve, 1000));

@@ -6,6 +6,41 @@ header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
+// Configurazione n8n
+define('N8N_URL', 'https://n8n.plamanco.com');
+define('N8N_API_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhYjg2ZDlhNy1hOWMyLTQzZjMtOThhNC1jNmJmYjQzOTA0YTEiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiYTZiYjkzOTYtZWYxMC00NDEyLTgzNDYtZWRiZjYwMzQxZTMxIiwiaWF0IjoxNzczNTg4MDcxfQ.zrHQGickMmZcdchxgtvr917rzJ7aYpee8VnmgnTGsQ8'); // Chiave API n8n
+
+// Funzione per aggiornare le variabili d'ambiente in n8n
+function updateN8nEnvironmentVariables($variables) {
+    $n8n_url = N8N_URL;
+    $api_key = N8N_API_KEY;
+    
+    // Per la versione gratuita di n8n, le variabili non sono supportate via API.
+    // Alternativa: Salvare le chiavi in un file JSON condiviso che n8n può leggere.
+    // Creiamo un file di configurazione che n8n può includere.
+    
+    $config_file = __DIR__ . '/../n8n_config.json';
+    $config = [];
+    
+    if (file_exists($config_file)) {
+        $config = json_decode(file_get_contents($config_file), true) ?? [];
+    }
+    
+    // Aggiorna le variabili
+    foreach ($variables as $key => $value) {
+        $config[$key] = $value;
+    }
+    
+    // Salva il file
+    file_put_contents($config_file, json_encode($config, JSON_PRETTY_PRINT));
+    
+    // Nota: Dovremmo anche aggiornare le variabili d'ambiente del container n8n,
+    // ma per la versione gratuita non è possibile via API.
+    // Soluzione temporanea: Salvare in file e modificare i workflow per leggere da file.
+    
+    return true;
+}
+
 // Gestione preflight OPTIONS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -30,6 +65,31 @@ if ($action === 'health') {
         'database' => $db_healthy,
         'message' => $db_healthy ? 'Database connected' : 'Database not connected (using mock data)'
     ]);
+}
+
+// Endpoint temporaneo: /api.php?action=create_users_table (DA USARE SOLO UNA VOLTA)
+if ($action === 'create_users_table' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!$pdo) {
+        json_response(['status' => 'error', 'message' => 'Database not connected'], 500);
+    }
+    
+    try {
+        // Crea tabella utenti se non esiste
+        $sql = "CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(50) UNIQUE NOT NULL,
+            email VARCHAR(100) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            api_keys JSON,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )";
+        $pdo->exec($sql);
+        
+        json_response(['status' => 'success', 'message' => 'Users table created or already exists']);
+    } catch (Exception $e) {
+        json_response(['status' => 'error', 'message' => $e->getMessage()], 500);
+    }
 }
 
 // Endpoint: /api.php?action=list_projects (GET)
@@ -172,6 +232,66 @@ if ($action === 'webhook_n8n' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     json_response(['status' => 'received']);
+}
+
+// Endpoint: /api.php?action=save_api_keys (POST)
+// Salva le API keys e aggiorna automaticamente n8n
+if ($action === 'save_api_keys' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    // Verifica autenticazione (qui dovresti verificare il token JWT)
+    // Per ora, accettiamo qualsiasi richiesta (solo per testing)
+    
+    $api_keys = [
+        'OPENROUTER_API_KEY' => $input['openrouter_key'] ?? '',
+        'KIEAI_API_KEY' => $input['kieai_key'] ?? '',
+        'YOUTUBE_API_KEY' => $input['youtube_key'] ?? ''
+    ];
+    
+    // Rimuovi le chiavi vuote
+    $api_keys = array_filter($api_keys);
+    
+    // Aggiorna le variabili di n8n (salvando su file)
+    $update_result = updateN8nEnvironmentVariables($api_keys);
+    
+    if ($update_result) {
+        // Aggiorna anche il file config.php locale (opzionale)
+        $config_content = file_get_contents(__DIR__ . '/config.php');
+        foreach ($api_keys as $key => $value) {
+            // Sostituisci la definizione esistente
+            $pattern = "/define\('$key',.*\);/";
+            $replacement = "define('$key', '$value');";
+            $config_content = preg_replace($pattern, $replacement, $config_content);
+        }
+        file_put_contents(__DIR__ . '/config.php', $config_content);
+        
+        json_response([
+            'status' => 'success',
+            'message' => 'API keys saved and n8n configuration updated',
+            'api_keys' => $api_keys
+        ]);
+    } else {
+        json_response(['status' => 'error', 'message' => 'Failed to update n8n configuration'], 500);
+    }
+}
+
+// Endpoint: /api.php?action=get_api_keys (GET)
+// Restituisce le API keys salvate (per i workflow n8n)
+if ($action === 'get_api_keys' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $config_file = __DIR__ . '/../n8n_config.json';
+    
+    if (file_exists($config_file)) {
+        $config = json_decode(file_get_contents($config_file), true);
+        json_response([
+            'status' => 'success',
+            'api_keys' => $config
+        ]);
+    } else {
+        json_response([
+            'status' => 'success',
+            'api_keys' => []
+        ]);
+    }
 }
 
 // Default: endpoint non trovato
