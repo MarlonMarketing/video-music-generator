@@ -1,228 +1,149 @@
-# Installazione e Configurazione MusicVideoForge PRO
+# Guida per Principianti Assoluti
 
-Questo documento guida attraverso l'installazione e la configurazione completa del progetto.
+Questo è un "copia-incolla" per far funzionare tutto senza pensare.
 
-## Prerequisiti
+## Cosa ti serve
+1. **Un computer** (Windows, Mac o Linux)
+2. **Internet**
 
-### 1. Docker Desktop
-Scarica e installa Docker Desktop da [docker.com](https://www.docker.com/products/docker-desktop/).
-Assicurati che Docker Desktop sia in esecuzione.
+---
 
-### 2. Git
-Assicurati di avere Git installato per clonare il repository (se necessario).
+## Passo 1: Installa Docker (il motore che fa funzionare tutto)
 
-### 3. API Keys
-Registrati per ottenere le API keys gratuite:
-- **OpenRouter**: [openrouter.ai](https://openrouter.ai/) (per modelli Gemini, Llama, DeepSeek)
-- **KIE.ai**: [kie.ai](https://kie.ai/) (per Suno e Kling)
-- **YouTube Data API**: [Google Cloud Console](https://console.cloud.google.com/) (per ricerca canali)
+1. Vai su [www.docker.com](https://www.docker.com/products/docker-desktop/)
+2. Clicca su **"Download for Windows"** (o Mac/Linux)
+3. Apri il file scaricato e installalo come un normale programma
+4. **IMPORTANTE**: Alla fine dell'installazione, **riavvia il computer**
+5. Dopo il riavvio, vedi un'icona di balena nella barra delle applicazioni? bene!
 
-## Installazione Passo Passo
+*Se Docker chiede permessi, accetta tutto.*
 
-### Passo 1: Clona il Repository
-```bash
-git clone https://github.com/MarlonMarketing/video-music-generator.git
-cd video-music-generator
-```
+---
 
-### Passo 2: Configura le Variabili d'Ambiente
-Copia il file di esempio e inserisci le tue API keys:
-```bash
-cp .env.example .env
-```
+## Passo 2: Scarica il codice
 
-Modifica il file `.env` con le tue credenziali:
+1. Apri il sito [github.com/MarlonMarketing/video-music-generator](https://github.com/MarlonMarketing/video-music-generator)
+2. Clicca sul pulsante verde **"Code"**
+3. Clicca su **"Download ZIP"**
+4. Estrai il file ZIP sul desktop (clic destro → "Estrai tutto")
+
+---
+
+## Passo 3: Ottieni le chiavi API (GRATIS)
+
+Devi registrarti su 3 siti per ottenere chiavi gratuite:
+
+### 1. OpenRouter (per la musica)
+1. Vai su [openrouter.ai](https://openrouter.ai/)
+2. Clicca **"Sign Up"** e registriti con email
+3. Vai su **"Keys"** nel menu
+4. Clicca **"Create Key"** e copia la chiave (inizia con `sk-or-`)
+
+### 2. KIE.ai (per musica e video)
+1. Vai su [kie.ai](https://kie.ai/)
+2. Clicca **"Sign Up"** e registriti
+3. Vai su **"API Keys"**
+4. Crea una nuova chiave e copiala (inizia con `kapi-`)
+
+### 3. YouTube (per la ricerca)
+1. Vai su [console.cloud.google.com](https://console.cloud.google.com/)
+2. Accedi con account Google
+3. Clicca su **"Nuovo Progetto"** e dagli un nome
+4. Vai su **"API e servizi"** → **"Library"**
+5. Cerca **"YouTube Data API v3"** e abilitala
+6. Vai su **"Credenziali"** → **"Crea credenziali"** → **"Chiave API"**
+7. Copia la chiave che appare
+
+---
+
+## Passo 4: Configura il file segreto
+
+1. Apri la cartella scaricata dal passo 2
+2. Trova il file chiamato `.env.example`
+3. **Rinominalo** in `.env` (rimuovi `.example`)
+4. Apri il file con il Blocco Note (clic destro → "Apri con" → "Blocco Note")
+
+Ora modifica il file così:
+
 ```env
-# API Keys (OBTAIN THESE FROM PROVIDERS)
-OPENROUTER_API_KEY=sk-or-v1-tuo-key-qui
-KIEAI_API_KEY=kapi-tuo-key-qui
-YOUTUBE_API_KEY=AIzaSy-tuo-key-qui
+OPENROUTER_API_KEY=incolla-qui-la-tua-chiave-openrouter
+KIEAI_API_KEY=incolla-qui-la-tua-chiave-kie
+YOUTUBE_API_KEY=incolla-qui-la-tua-chiave-youtube
 
-# App Settings
-N8N_PASSWORD=your_secure_password
-SECRET_KEY=super_secret_key_change_this
-
-# Redis (Docker interna)
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-# Celery
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
+N8N_PASSWORD=tua_password_qui
+SECRET_KEY=super_secret_qui
 ```
 
-### Passo 3: Avvia i Servizi con Docker
-```bash
-docker-compose up --build -d
-```
+**Sostituisci** "incolla-qui..." con le tue chiavi ottenute al passo 3.
 
-Questo comando avvierà:
-1. **Backend** (FastAPI) - Porta 8000
-2. **Frontend** (React) - Porta 3000
-3. **n8n** (Workflows) - Porta 5678
-4. **Redis** (Coda) - Porta 6379
-5. **Celery-FFmpeg** (Post-processing)
+**Scegli una password** per N8N (qualunque cosa, es: "miosicuro123")
 
-### Passo 4: Verifica l'Installazione
-Controlla che tutti i container siano in esecuzione:
-```bash
-docker-compose ps
-```
+Salva il file (CTRL+S) e chiudi.
 
-Dovresti vedere 5 servizi con stato "Up".
+---
 
-### Passo 5: Accedi ai Servizi
+## Passo 5: Avvia tutto con un solo click
 
-#### Frontend (Interfaccia Web)
-URL: http://localhost:3000
-- Interfaccia a schede per ricerca, lyrics, musica, video e progetti
+1. Torna nella cartella principale del progetto
+2. Trova il file `deploy.sh`
+3. **Cliccalo due volte** per eseguirlo
 
-#### Backend API
-URL: http://localhost:8000
-- Documentazione API: http://localhost:8000/docs
+*Se Windows chiede permessi, clicca "Sì"*
 
-#### n8n (Workflow Manager)
-URL: http://localhost:5678
+**Oppure** se non funziona:
+1. Apri il **Prompt dei comandi** (cerca "cmd" nel menu Start)
+2. Scrivi: `cd` e spazio, poi trascina la cartella del progetto nella finestra nera
+3. Premi Invio
+4. Scrivi: `docker-compose up --build -d`
+5. Premi Invio e aspetta (ci vorranno alcuni minuti)
+
+---
+
+## Passo 6: Usa il programma!
+
+Una volta finito (vedrai scritte verdi o messaggi di "Done"):
+
+1. Apri il browser (Chrome, Firefox, Edge)
+2. Vai su: **http://localhost:3000**
+
+**Eccolo!** Il programma è pronto.
+
+### Come usarlo:
+
+- **🔍 Research**: Cerca canali YouTube per vedere opportunità
+- **✍️ Lyrics**: Scrivi una descrizione e crea testi canzoni
+- **🎵 Music**: Crea musica con Suno
+- **🎬 Video**: Crea video cinematici con Kling
+- **📊 Projects**: Gestisci i tuoi progetti salvati
+
+### Accesso n8n (opzionale):
+Se vuoi vedere i flussi di lavoro:
+- Vai su: **http://localhost:5678**
 - Username: `admin`
-- Password: quella impostata in `.env` (N8N_PASSWORD)
+- Password: quella che hai scritto nel file `.env`
 
-## Configurazione n8n
+---
 
-### Importa i Workflow
-1. Accedi a n8n (http://localhost:5678)
-2. Vai su "Workflows" → "Import from File"
-3. Importa i 5 workflow dalla cartella `n8n_workflows`:
-   - `1_youtube_research.json`
-   - `2_pro_lyrics.json`
-   - `3_kie_suno_pro.json`
-   - `4_kling_cinematic.json`
-   - `5_ffmpeg_pro.json`
+## Problemi? Ecco le soluzioni:
 
-### Configura le Credenziali in n8n
-1. Vai su "Credentials" → "Add Credential"
-2. Aggiungi:
-   - **OpenRouter API**: Inserisci la tua `OPENROUTER_API_KEY`
-   - **HTTP Header Auth**: Per KIE.ai, usa `Authorization: Bearer <KIEAI_API_KEY>`
-   - **YouTube API**: Inserisci la tua `YOUTUBE_API_KEY`
+### "Docker non si apre"
+- Riavvia il computer
+- Assicurati che l'icona della balena sia visibile nella barra delle applicazioni
 
-### Attiva i Workflow
-Per ogni workflow importato:
-1. Apri il workflow
-2. Clicca su "Active" per attivarlo
-3. Salva le modifiche
+### "Errore nel codice"
+- Chiudi tutto e riapri
+- Assicurati di aver seguito tutti i passi
 
-## Utilizzo del Progetto
+### "Non funziona ancora"
+- Premi **CTRL+C** nella finestra nera (se aperta)
+- Scrivi: `docker-compose down`
+- Poi: `docker-compose up --build -d`
 
-### 1. Ricerca YouTube
-1. Vai su "Research" nel frontend
-2. Inserisci un canale o argomento
-3. Clicca "Start Research"
-4. Visualizza i risultati con opportunity score
+---
 
-### 2. Generazione Lyrics
-1. Vai su "Lyrics"
-2. Inserisci un prompt descrittivo
-3. Seleziona lingua (IT/EN/ES)
-4. Attiva "Instrumental only" se necessario
-5. Clicca "Generate Lyrics"
+## Ricorda:
+- **Non chiudere** la finestra nera quando il programma è in esecuzione
+- Se spegni il computer, riavvia tutto con il file `deploy.sh`
+- Le tue chiavi API sono segrete, non condividerle!
 
-### 3. Generazione Musica
-1. Vai su "Music"
-2. Inserisci stile e parametri
-3. Incolla le lyrics generate (o lascia vuoto per strumentale)
-4. Clicca "Generate Music"
-5. Ascolta l'anteprima
-
-### 4. Generazione Video
-1. Vai su "Video"
-2. Inserisci prompt cinematico
-3. Seleziona durata e risoluzione
-4. Clicca "Generate Video"
-5. Visualizza l'anteprima video
-
-### 5. Gestione Progetti
-1. Vai su "Projects"
-2. Visualizza tutti i progetti creati
-3. Scarica ZIP dei progetti
-4. Visualizza varianti A/B
-
-## Comandi Utili
-
-### Visualizzare i Logs
-```bash
-docker-compose logs -f
-```
-
-### Riavviare i Servizi
-```bash
-docker-compose restart
-```
-
-### Ferma i Servizi
-```bash
-docker-compose down
-```
-
-### Aggiornare il Progetto
-```bash
-git pull origin main
-docker-compose up --build -d
-```
-
-## Risoluzione Problemi
-
-### Problema: Porte già in uso
-Se le porte 3000, 8000 o 5678 sono già in uso:
-1. Modifica `docker-compose.yml` cambiando le porte
-2. Esempio: `"3001:80"` invece di `"3000:80"`
-
-### Problema: API Keys non valide
-Verifica che le API keys siano corrette e attive nei rispettivi provider.
-
-### Problema: Container non si avvia
-```bash
-# Ferma tutto
-docker-compose down
-
-# Rimuovi volumi (ATTENZIONE: cancella dati)
-docker-compose down -v
-
-# Riavvia
-docker-compose up --build
-```
-
-### Problema: Frontend non si connette al Backend
-Verifica che il servizio `backend` sia in esecuzione e che il file `frontend/nginx.conf` sia configurato correttamente.
-
-## Struttura Cartelle
-
-```
-video-music-generator/
-├── backend/              # API FastAPI + Celery
-├── frontend/             # Interfaccia React
-├── n8n_workflows/        # Workflow n8n (JSON)
-├── openclaw_agents/      # Agenti AI (YAML)
-├── docker-compose.yml    # Configurazione Docker
-├── .env.example          # Template variabili d'ambiente
-├── deploy.sh             # Script deploy automatico
-├── README.md             # Documentazione principale
-├── INSTALL.md            # Questo file
-└── VERSION               # Versione corrente (1.0.0)
-```
-
-## Supporto
-
-Per problemi o domande:
-1. Controlla i logs: `docker-compose logs -f`
-2. Verifica la documentazione API: http://localhost:8000/docs
-3. Controlla lo stato di n8n: http://localhost:5678
-
-## Aggiornamenti Futuri
-
-Per aggiornare alla versione successiva:
-```bash
-git pull origin main
-docker-compose up --build -d
-```
-
-La versione corrente è: **v1.0.0**
+**Tutto dovrebbe funzionare ora! Buon divertimento!** 🎵🎬
