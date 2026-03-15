@@ -1,0 +1,80 @@
+{
+  "name": "2_pro_lyrics",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhook": "POST /lyrics"
+    },
+    {
+      "parameters": {
+        "model": "meta-llama/llama-3.3-70b-instruct:free",
+        "messages": [
+          {
+            "role": "system",
+            "content": "You are a professional lyricist. Write high-quality lyrics in the requested language."
+          },
+          {
+            "role": "user",
+            "content": "={{ 'Write lyrics for: ' + $json.prompt }}"
+          }
+        ],
+        "maxTokens": 1024
+      },
+      "id": "openrouter-lyrics",
+      "name": "OpenRouter Lyrics",
+      "type": "n8n-nodes-base.openRouter",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/webhook/n8n",
+        "method": "POST",
+        "body": {
+          "event": "lyrics_generated",
+          "data": {
+            "lyrics": "={{ $json.choices[0].message.content }}"
+          }
+        },
+        "headers": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Lyrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Lyrics": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

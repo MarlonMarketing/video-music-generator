@@ -1,0 +1,113 @@
+{
+  "name": "1_youtube_research",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhook": "POST /research"
+    },
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/search",
+        "method": "GET",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "type",
+              "value": "channel"
+            },
+            {
+              "name": "maxResults",
+              "value": "={{ $json.limit }}"
+            },
+            {
+              "name": "key",
+              "value": "={{ $env.YOUTUBE_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "youtube-search",
+      "name": "YouTube Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Calculate opportunity score based on subscriber count, view count, etc.\nconst items = $input.all();\nreturn items.map(item => {\n  const snippet = item.json.items[0].snippet;\n  const opportunityScore = Math.floor(Math.random() * 30) + 70; // Mock calculation\n  return {\n    json: {\n      channel: snippet.channelTitle,\n      opportunity_score: opportunityScore\n    }\n  };\n});"
+      },
+      "id": "calculate-opportunity",
+      "name": "Calculate Opportunity",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/webhook/n8n",
+        "method": "POST",
+        "body": {
+          "event": "youtube_research_complete",
+          "data": "={{ $json }}"
+        },
+        "headers": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "YouTube Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "YouTube Search": {
+      "main": [
+        [
+          {
+            "node": "Calculate Opportunity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Opportunity": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

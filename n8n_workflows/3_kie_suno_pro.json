@@ -1,0 +1,98 @@
+{
+  "name": "3_kie_suno_pro",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhook": "POST /music"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/v1/suno/generate",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "lyrics",
+              "value": "={{ $json.lyrics }}"
+            },
+            {
+              "name": "make_instrumental",
+              "value": "={{ $json.make_instrumental }}"
+            },
+            {
+              "name": "model",
+              "value": "={{ $json.model }}"
+            }
+          ]
+        },
+        "headers": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.KIEAI_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "sunu-api-call",
+      "name": "Suno API Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/webhook/n8n",
+        "method": "POST",
+        "body": {
+          "event": "music_generated",
+          "data": "={{ $json }}"
+        },
+        "headers": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Suno API Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suno API Call": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

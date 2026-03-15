@@ -1,0 +1,94 @@
+{
+  "name": "4_kling_cinematic",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhook": "POST /video"
+    },
+    {
+      "parameters": {
+        "url": "https://api.kie.ai/v1/kling/generate",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "={{ $json.prompt }}"
+            },
+            {
+              "name": "duration",
+              "value": "={{ $json.duration }}"
+            },
+            {
+              "name": "resolution",
+              "value": "={{ $json.resolution }}"
+            }
+          ]
+        },
+        "headers": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.KIEAI_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "kling-api-call",
+      "name": "Kling API Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/webhook/n8n",
+        "method": "POST",
+        "body": {
+          "event": "video_generated",
+          "data": "={{ $json }}"
+        },
+        "headers": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Kling API Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kling API Call": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}

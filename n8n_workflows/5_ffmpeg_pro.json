@@ -1,0 +1,88 @@
+{
+  "name": "5_ffmpeg_pro",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhook": "POST /ffmpeg"
+    },
+    {
+      "parameters": {
+        "operation": "executeCommand",
+        "command": "ffmpeg",
+        "arguments": [
+          "-y",
+          "-i",
+          "={{ $json.input_path }}",
+          "-vf",
+          "scale=1920:1080",
+          "-c:v",
+          "libx264",
+          "-crf",
+          "18",
+          "-preset",
+          "medium",
+          "-c:a",
+          "aac",
+          "-b:a",
+          "192k",
+          "-af",
+          "loudnorm=-16:I=-16:LRA=11:TP=-1.5",
+          "={{ $json.output_path }}"
+        ]
+      },
+      "id": "ffmpeg-command",
+      "name": "FFmpeg Command",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://backend:8000/webhook/n8n",
+        "method": "POST",
+        "body": {
+          "event": "ffmpeg_complete",
+          "data": "={{ $json }}"
+        },
+        "headers": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "FFmpeg Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FFmpeg Command": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1"
+}
