@@ -1,0 +1,53 @@
+[
+  {
+    "name": "5_ffmpeg_pro",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "ffmpeg"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "jsCode": "const { execFileSync } = require('child_process');\n\nconst inputPath = $json.input_path;\nconst outputPath = $json.output_path;\n\nconst args = [\n  '-y',\n  '-i',\n  inputPath,\n  '-vf',\n  'scale=1920:1080',\n  '-c:v',\n  'libx264',\n  '-crf',\n  '18',\n  '-preset',\n  'medium',\n  '-c:a',\n  'aac',\n  '-b:a',\n  '192k',\n  '-af',\n  'loudnorm=-16:I=-16:LRA=11:TP=-1.5',\n  outputPath\n];\n\ntry {\n  const result = execFileSync('ffmpeg', args, { encoding: 'utf8' });\n  return [{ json: { result: 'success', output: result } }];\n} catch (error) {\n  return [{ json: { result: 'error', error: error.message } }];\n}"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [450, 300],
+        "name": "FFmpeg Command",
+        "id": "ffmpeg-command"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "ffmpeg_complete",
+            "data": "={{ $json }}"
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [650, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "FFmpeg Command", "type": "main", "index": 0}]]
+      },
+      "FFmpeg Command": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  }
+]

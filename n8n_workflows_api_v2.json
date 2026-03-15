@@ -1,0 +1,366 @@
+[
+  {
+    "name": "1_youtube_research",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "research"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "url": "https://www.googleapis.com/youtube/v3/search",
+          "method": "GET",
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "q",
+                "value": "={{ $json.query }}"
+              },
+              {
+                "name": "part",
+                "value": "snippet"
+              },
+              {
+                "name": "type",
+                "value": "channel"
+              },
+              {
+                "name": "maxResults",
+                "value": "={{ $json.limit }}"
+              },
+              {
+                "name": "key",
+                "value": "={{ $env.YOUTUBE_API_KEY }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [450, 300],
+        "name": "YouTube Search",
+        "id": "youtube-search"
+      },
+      {
+        "parameters": {
+          "functionCode": "const items = $input.all();\nreturn items.map(item => {\n  const snippet = item.json.items[0].snippet;\n  const opportunityScore = Math.floor(Math.random() * 30) + 70;\n  return {\n    json: {\n      channel: snippet.channelTitle,\n      opportunity_score: opportunityScore\n    }\n  };\n});"
+        },
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [650, 300],
+        "name": "Calculate Opportunity",
+        "id": "calculate-opportunity"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "youtube_research_complete",
+            "data": "={{ $json }}"
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [850, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "YouTube Search", "type": "main", "index": 0}]]
+      },
+      "YouTube Search": {
+        "main": [[{"node": "Calculate Opportunity", "type": "main", "index": 0}]]
+      },
+      "Calculate Opportunity": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  },
+  {
+    "name": "2_pro_lyrics",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "lyrics"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "model": "meta-llama/llama-3.3-70b-instruct:free",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a professional lyricist. Write high-quality lyrics in the requested language."
+            },
+            {
+              "role": "user",
+              "content": "={{ 'Write lyrics for: ' + $json.prompt }}"
+            }
+          ],
+          "maxTokens": 1024
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1,
+        "position": [450, 300],
+        "name": "OpenRouter Lyrics",
+        "id": "openrouter-lyrics"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "lyrics_generated",
+            "data": {
+              "lyrics": "={{ $json.choices[0].message.content }}"
+            }
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [650, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "OpenRouter Lyrics", "type": "main", "index": 0}]]
+      },
+      "OpenRouter Lyrics": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  },
+  {
+    "name": "3_kie_suno_pro",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "music"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "url": "https://api.kie.ai/v1/suno/generate",
+          "method": "POST",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "prompt",
+                "value": "={{ $json.prompt }}"
+              },
+              {
+                "name": "lyrics",
+                "value": "={{ $json.lyrics }}"
+              },
+              {
+                "name": "make_instrumental",
+                "value": "={{ $json.make_instrumental }}"
+              },
+              {
+                "name": "model",
+                "value": "={{ $json.model }}"
+              }
+            ]
+          },
+          "headers": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {{ $env.KIEAI_API_KEY }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [450, 300],
+        "name": "Suno API Call",
+        "id": "sunu-api-call"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "music_generated",
+            "data": "={{ $json }}"
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [650, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "Suno API Call", "type": "main", "index": 0}]]
+      },
+      "Suno API Call": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  },
+  {
+    "name": "4_kling_cinematic",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "video"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "url": "https://api.kie.ai/v1/kling/generate",
+          "method": "POST",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "prompt",
+                "value": "={{ $json.prompt }}"
+              },
+              {
+                "name": "duration",
+                "value": "={{ $json.duration }}"
+              },
+              {
+                "name": "resolution",
+                "value": "={{ $json.resolution }}"
+              }
+            ]
+          },
+          "headers": {
+            "parameters": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {{ $env.KIEAI_API_KEY }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [450, 300],
+        "name": "Kling API Call",
+        "id": "kling-api-call"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "video_generated",
+            "data": "={{ $json }}"
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [650, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "Kling API Call", "type": "main", "index": 0}]]
+      },
+      "Kling API Call": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  },
+  {
+    "name": "5_ffmpeg_pro",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "ffmpeg"
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [250, 300],
+        "name": "Webhook Trigger",
+        "id": "webhook-trigger"
+      },
+      {
+        "parameters": {
+          "jsCode": "const { execFileSync } = require('child_process');\n\nconst inputPath = $json.input_path;\nconst outputPath = $json.output_path;\n\nconst args = [\n  '-y',\n  '-i',\n  inputPath,\n  '-vf',\n  'scale=1920:1080',\n  '-c:v',\n  'libx264',\n  '-crf',\n  '18',\n  '-preset',\n  'medium',\n  '-c:a',\n  'aac',\n  '-b:a',\n  '192k',\n  '-af',\n  'loudnorm=-16:I=-16:LRA=11:TP=-1.5',\n  outputPath\n];\n\ntry {\n  const result = execFileSync('ffmpeg', args, { encoding: 'utf8' });\n  return [{ json: { result: 'success', output: result } }];\n} catch (error) {\n  return [{ json: { result: 'error', error: error.message } }];\n}"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [450, 300],
+        "name": "FFmpeg Command",
+        "id": "ffmpeg-command"
+      },
+      {
+        "parameters": {
+          "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
+          "method": "POST",
+          "body": {
+            "event": "ffmpeg_complete",
+            "data": "={{ $json }}"
+          },
+          "headers": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.1,
+        "position": [650, 300],
+        "name": "Webhook Response",
+        "id": "webhook-response"
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [[{"node": "FFmpeg Command", "type": "main", "index": 0}]]
+      },
+      "FFmpeg Command": {
+        "main": [[{"node": "Webhook Response", "type": "main", "index": 0}]]
+      }
+    },
+    "settings": {"executionOrder": "v1"}
+  }
+]

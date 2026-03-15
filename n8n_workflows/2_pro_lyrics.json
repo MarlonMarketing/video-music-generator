@@ -27,7 +27,7 @@
       },
       "id": "openrouter-lyrics",
       "name": "OpenRouter Lyrics",
-      "type": "n8n-nodes-base.openRouter",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
       "position": [450, 300]
     },

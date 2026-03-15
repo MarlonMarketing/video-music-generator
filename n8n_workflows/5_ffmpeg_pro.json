@@ -12,33 +12,12 @@
     },
     {
       "parameters": {
-        "operation": "executeCommand",
-        "command": "ffmpeg",
-        "arguments": [
-          "-y",
-          "-i",
-          "={{ $json.input_path }}",
-          "-vf",
-          "scale=1920:1080",
-          "-c:v",
-          "libx264",
-          "-crf",
-          "18",
-          "-preset",
-          "medium",
-          "-c:a",
-          "aac",
-          "-b:a",
-          "192k",
-          "-af",
-          "loudnorm=-16:I=-16:LRA=11:TP=-1.5",
-          "={{ $json.output_path }}"
-        ]
+        "jsCode": "const { execFileSync } = require('child_process');\n\nconst inputPath = $json.input_path;\nconst outputPath = $json.output_path;\n\nconst args = [\n  '-y',\n  '-i',\n  inputPath,\n  '-vf',\n  'scale=1920:1080',\n  '-c:v',\n  'libx264',\n  '-crf',\n  '18',\n  '-preset',\n  'medium',\n  '-c:a',\n  'aac',\n  '-b:a',\n  '192k',\n  '-af',\n  'loudnorm=-16:I=-16:LRA=11:TP=-1.5',\n  outputPath\n];\n\ntry {\n  const result = execFileSync('ffmpeg', args, { encoding: 'utf8' });\n  return [{ json: { result: 'success', output: result } }];\n} catch (error) {\n  return [{ json: { result: 'error', error: error.message } }];\n}"
       },
       "id": "ffmpeg-command",
       "name": "FFmpeg Command",
-      "type": "n8n-nodes-base.executeCommand",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [450, 300]
     },
     {
