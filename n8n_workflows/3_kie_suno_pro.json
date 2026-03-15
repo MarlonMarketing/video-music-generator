@@ -53,7 +53,7 @@
     },
     {
       "parameters": {
-        "url": "http://backend:8000/webhook/n8n",
+        "url": "https://videomusic.plamanco.com/api/api.php?action=webhook_n8n",
         "method": "POST",
         "body": {
           "event": "music_generated",
